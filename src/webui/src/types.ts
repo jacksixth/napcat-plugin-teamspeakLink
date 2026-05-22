@@ -12,13 +12,32 @@ export interface PluginStatus {
     }
 }
 
+export interface TS3Config {
+    host: string
+    protocol: 'RAW' | 'SSH'
+    queryPort: number
+    serverPort: number
+    username: string
+    password: string
+    nickname: string
+    serverName: string
+    reconnectTimer: number
+}
+
+export interface TS3NotifyConfig {
+    noticeGroupIds: string[]
+    disNotifyNameList: string[]
+    enableChannelMoveNotify: boolean
+}
+
 export interface PluginConfig {
     enabled: boolean
     debug: boolean
     commandPrefix: string
     cooldownSeconds: number
+    ts3: TS3Config
+    ts3Notify: TS3NotifyConfig
     groupConfigs?: Record<string, GroupConfig>
-    // TODO: 在这里添加你的插件配置项类型
 }
 
 export interface GroupConfig {
