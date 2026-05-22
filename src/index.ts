@@ -21,22 +21,14 @@
 
 import type {
     PluginModule,
-    PluginConfigSchema,
-    PluginConfigUIController,
     NapCatPluginContext,
 } from 'napcat-types/napcat-onebot/network/plugin/types';
 import { EventType } from 'napcat-types/napcat-onebot/event/index';
 
-import { buildConfigSchema } from './config';
 import { pluginState } from './core/state';
 import { handleMessage } from './handlers/message-handler';
 import { registerApiRoutes } from './services/api-service';
 import type { PluginConfig } from './types';
-
-// ==================== 配置 UI Schema ====================
-
-/** NapCat WebUI 读取此导出来展示配置面板 */
-export let plugin_config_ui: PluginConfigSchema = [];
 
 // ==================== 生命周期函数 ====================
 
@@ -51,16 +43,13 @@ export const plugin_init: PluginModule['plugin_init'] = async (ctx) => {
 
         ctx.logger.info('TeamSpeak3 Link 插件初始化中...');
 
-        // 2. 生成配置 Schema（用于 NapCat WebUI 配置面板）
-        plugin_config_ui = buildConfigSchema(ctx);
-
-        // 3. 注册 WebUI 页面和静态资源
+        // 2. 注册 WebUI 页面和静态资源
         registerWebUI(ctx);
 
-        // 4. 注册 API 路由
+        // 3. 注册 API 路由
         registerApiRoutes(ctx);
 
-        // 5. 初始化 TS3 连接
+        // 4. 初始化 TS3 连接
         try {
             pluginState.ts3.init(ctx);
             ctx.logger.info('TS3 服务已启动');
@@ -128,16 +117,14 @@ export const plugin_set_config: PluginModule['plugin_set_config'] = async (ctx, 
 /**
  * 配置变更回调
  * 当 WebUI 中修改单个配置项时触发（需配置项标记 reactive: true）
+ * 
+ * @deprecated 此插件使用自定义 WebUI，不再使用 NapCat 配置系统
  */
 export const plugin_on_config_change: PluginModule['plugin_on_config_change'] = async (
     ctx, ui, key, value, currentConfig
 ) => {
-    try {
-        pluginState.updateConfig({ [key]: value });
-        ctx.logger.debug(`配置项 ${key} 已更新`);
-    } catch (err) {
-        ctx.logger.error(`更新配置项 ${key} 失败:`, err);
-    }
+    // 不使用 NapCat 配置系统，所有配置通过自定义 WebUI API 管理
+    ctx.logger.debug(`配置变更通知已忽略: ${key}`);
 };
 
 // ==================== 内部函数 ====================
