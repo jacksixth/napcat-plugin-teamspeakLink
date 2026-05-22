@@ -214,34 +214,43 @@ export async function handleMessage(ctx: NapCatPluginContext, event: OB11Message
         switch (subCommand) {
             case 'help': {
                 const helpText = [
-                    `[= 插件帮助 =]`,
+                    '[= TeamSpeak3 Link 帮助 =]',
                     `${prefix} help - 显示帮助信息`,
-                    `${prefix} ping - 测试连通性`,
-                    `${prefix} status - 查看运行状态`,
+                    `${prefix} 人数 - 查看 TS3 在线人数`,
+                    `${prefix} status - 查看插件运行状态`,
                 ].join('\n');
                 await sendReply(ctx, event, helpText);
                 break;
             }
 
-            case 'ping': {
+            case '人数':
+            case 'online': {
                 // 群消息检查 CD
                 if (messageType === 'group' && groupId) {
-                    const remaining = getCooldownRemaining(groupId, 'ping');
+                    const remaining = getCooldownRemaining(groupId, 'online');
                     if (remaining > 0) {
                         await sendReply(ctx, event, `请等待 ${remaining} 秒后再试`);
                         return;
                     }
                 }
 
-                await sendReply(ctx, event, 'pong!');
-                if (messageType === 'group' && groupId) setCooldown(groupId, 'ping');
-                pluginState.incrementProcessed();
+                try {
+                    const userList = await pluginState.ts3.getAllChannelList();
+                    await sendReply(ctx, event, userList);
+                    if (messageType === 'group' && groupId) setCooldown(groupId, 'online');
+                    pluginState.incrementProcessed();
+                } catch (error) {
+                    await sendReply(ctx, event, '❌ 查询 TS3 在线人数失败');
+                    ctx.logger.error('查询在线人数失败:', error);
+                }
                 break;
             }
 
             case 'status': {
+                const ts3Status = pluginState.ts3.getConnectionStatus() ? '✓ 已连接' : '✗ 未连接';
                 const statusText = [
-                    `[= 插件状态 =]`,
+                    '[= TeamSpeak3 Link 状态 =]',
+                    `TS3 连接: ${ts3Status}`,
                     `运行时长: ${pluginState.getUptimeFormatted()}`,
                     `今日处理: ${pluginState.stats.todayProcessed}`,
                     `总计处理: ${pluginState.stats.processed}`,

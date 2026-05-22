@@ -15,6 +15,7 @@ import path from 'path';
 import type { NapCatPluginContext, PluginLogger } from 'napcat-types/napcat-onebot/network/plugin/types';
 import { DEFAULT_CONFIG } from '../config';
 import type { PluginConfig, GroupConfig } from '../types';
+import { ts3Service } from '../services/ts3-service';
 
 // ==================== 配置清洗工具 ====================
 
@@ -78,6 +79,11 @@ class PluginState {
         lastUpdateDay: new Date().toDateString(),
     };
 
+    /** TS3 服务实例 */
+    get ts3() {
+        return ts3Service;
+    }
+
     /** 获取上下文（确保已初始化） */
     get ctx(): NapCatPluginContext {
         if (!this._ctx) throw new Error('PluginState 尚未初始化，请先调用 init()');
@@ -122,7 +128,14 @@ class PluginState {
     /**
      * 清理（在 plugin_cleanup 中调用）
      */
-    cleanup(): void {
+    async cleanup(): Promise<void> {
+        // 清理 TS3 连接
+        try {
+            await ts3Service.disconnect();
+        } catch (e) {
+            this.logger.warn('关闭 TS3 连接时出错:', e);
+        }
+
         // 清理所有定时器
         for (const [jobId, timer] of this.timers) {
             clearInterval(timer);

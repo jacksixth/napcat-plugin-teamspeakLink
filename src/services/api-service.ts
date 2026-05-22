@@ -139,6 +139,31 @@ export function registerApiRoutes(ctx: NapCatPluginContext): void {
         }
     });
 
+    // ==================== TeamSpeak3 API ====================
+
+    /** 获取 TS3 在线用户列表（结构化数据） */
+    router.getNoAuth('/ts3/users', async (_req, res) => {
+        try {
+            const userList = await pluginState.ts3.getAllUserList();
+            res.json({ code: 0, data: userList });
+        } catch (err) {
+            ctx.logger.error('获取 TS3 用户列表失败:', err);
+            res.status(500).json({ code: -1, message: String(err) });
+        }
+    });
+
+    /** 获取 TS3 连接状态 */
+    router.getNoAuth('/ts3/status', (_req, res) => {
+        const isConnected = pluginState.ts3.getConnectionStatus();
+        res.json({
+            code: 0,
+            data: {
+                connected: isConnected,
+                status: isConnected ? 'connected' : 'disconnected',
+            },
+        });
+    });
+
     // TODO: 在这里添加你的自定义 API 路由
 
     ctx.logger.debug('API 路由注册完成');
