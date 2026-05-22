@@ -15,7 +15,10 @@ const nodeModules = [
 ].flat();
 
 // 依赖排除（如有外部依赖需排除，在此添加）
-const external: string[] = [];
+const external: string[] = [
+    'ts3-nodejs-library',
+    'ssh2',
+];
 
 /**
  * 递归复制目录
