@@ -37,6 +37,34 @@ function sanitizeConfig(raw: unknown): PluginConfig {
     if (typeof raw.commandPrefix === 'string') out.commandPrefix = raw.commandPrefix;
     if (typeof raw.cooldownSeconds === 'number') out.cooldownSeconds = raw.cooldownSeconds;
 
+    // TS3 服务器配置清洗
+    if (isObject(raw.ts3)) {
+        const ts3 = raw.ts3;
+        if (typeof ts3.host === 'string') out.ts3.host = ts3.host;
+        if (ts3.protocol === 'RAW' || ts3.protocol === 'SSH') out.ts3.protocol = ts3.protocol;
+        if (typeof ts3.queryPort === 'number') out.ts3.queryPort = ts3.queryPort;
+        if (typeof ts3.serverPort === 'number') out.ts3.serverPort = ts3.serverPort;
+        if (typeof ts3.username === 'string') out.ts3.username = ts3.username;
+        if (typeof ts3.password === 'string') out.ts3.password = ts3.password;
+        if (typeof ts3.nickname === 'string') out.ts3.nickname = ts3.nickname;
+        if (typeof ts3.serverName === 'string') out.ts3.serverName = ts3.serverName;
+        if (typeof ts3.reconnectTimer === 'number') out.ts3.reconnectTimer = ts3.reconnectTimer;
+    }
+
+    // TS3 通知配置清洗
+    if (isObject(raw.ts3Notify)) {
+        const ts3Notify = raw.ts3Notify;
+        if (Array.isArray(ts3Notify.noticeGroupIds)) {
+            out.ts3Notify.noticeGroupIds = ts3Notify.noticeGroupIds.filter((id): id is string => typeof id === 'string');
+        }
+        if (Array.isArray(ts3Notify.disNotifyNameList)) {
+            out.ts3Notify.disNotifyNameList = ts3Notify.disNotifyNameList.filter((name): name is string => typeof name === 'string');
+        }
+        if (typeof ts3Notify.enableChannelMoveNotify === 'boolean') {
+            out.ts3Notify.enableChannelMoveNotify = ts3Notify.enableChannelMoveNotify;
+        }
+    }
+
     // 群配置清洗
     if (isObject(raw.groupConfigs)) {
         for (const [groupId, groupConfig] of Object.entries(raw.groupConfigs)) {
@@ -48,8 +76,6 @@ function sanitizeConfig(raw: unknown): PluginConfig {
             }
         }
     }
-
-    // TODO: 在这里添加你的配置项清洗逻辑
 
     return out;
 }
