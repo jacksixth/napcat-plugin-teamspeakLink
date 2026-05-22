@@ -1,7 +1,7 @@
 {
   "name": "napcat-plugin-teamspeakLink",
   "plugin": "TeamSpeak3 Link",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "index.mjs",
   "description": "连接 QQ 机器人与 TeamSpeak3 语音服务器，支持在线人数查询和用户通知",
