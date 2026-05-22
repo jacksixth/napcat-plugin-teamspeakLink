@@ -1,6 +1,17 @@
-# NapCat 插件开发模板
+# TeamSpeak3 Link - NapCat 插件
 
-一个快速开始 NapCat 插件开发的模板项目，基于实际生产项目架构提炼而成。
+连接 QQ 机器人与 TeamSpeak3 语音服务器，支持在线人数查询和用户通知功能。
+
+> **项目来源**: 本插件是从 [jacksixth/karin-plugin-teamspeak3](https://github.com/jacksixth/karin-plugin-teamspeak3) 迁移至 NapCat 平台的版本，保留了核心功能并适配了 NapCat 插件架构。
+
+## ✨ 功能特性
+
+- 🎙️ **TeamSpeak3 服务器连接**: 支持 RAW 和 SSH 协议
+- 👥 **在线人数查询**: QQ 命令查看 TS3 各频道在线用户
+- 🔔 **用户进出通知**: 自动推送用户进入/离开 TS3 的通知到 QQ 群
+- 🔄 **智能重连**: 断线自动重连，可配置重试次数
+- 🌐 **RESTful API**: 提供在线用户数据接口
+- ⚙️ **WebUI 配置**: 可视化的 TeamSpeak3 服务器配置界面
 
 ## 📁 项目结构
 
@@ -55,6 +66,45 @@ napcat-plugin-template/
 ├── vite.config.ts             # Vite 构建配置（含资源复制插件）
 └── README.md
 ```
+
+## 🎯 TeamSpeak3 功能说明
+
+### QQ 命令
+
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `#ts help` | 显示帮助信息 | `#ts help` |
+| `#ts 人数` | 查看 TS3 在线人数 | `#ts 人数` |
+| `#ts online` | 查看 TS3 在线人数（英文别名） | `#ts online` |
+| `#ts status` | 查看插件和 TS3 连接状态 | `#ts status` |
+
+### API 接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/plugin/<id>/api/ts3/users` | 获取在线用户列表（结构化数据） |
+| GET | `/plugin/<id>/api/ts3/status` | 获取 TS3 连接状态 |
+
+### 配置项
+
+在 NapCat WebUI 中配置以下 TeamSpeak3 服务器信息：
+
+**服务器配置：**
+- 服务器地址（HOST）
+- 查询协议（RAW/SSH）
+- 查询端口（默认 10011）
+- 语音端口（默认 9987）
+- 管理员账号和密码
+- 机器人昵称
+- 服务器名称
+- 重连次数（-1 为无限重试）
+
+**通知配置：**
+- 接收通知的 QQ 群号
+- 不发送通知的昵称列表
+- 是否开启频道移动通知
+
+---
 
 ## 🚀 快速开始
 
