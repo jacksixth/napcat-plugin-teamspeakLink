@@ -49,7 +49,7 @@ export const plugin_init: PluginModule['plugin_init'] = async (ctx) => {
         // 1. 初始化全局状态（加载配置）
         pluginState.init(ctx);
 
-        ctx.logger.info('插件初始化中...');
+        ctx.logger.info('TeamSpeak3 Link 插件初始化中...');
 
         // 2. 生成配置 Schema（用于 NapCat WebUI 配置面板）
         plugin_config_ui = buildConfigSchema(ctx);
@@ -60,7 +60,15 @@ export const plugin_init: PluginModule['plugin_init'] = async (ctx) => {
         // 4. 注册 API 路由
         registerApiRoutes(ctx);
 
-        ctx.logger.info('插件初始化完成');
+        // 5. 初始化 TS3 连接
+        try {
+            pluginState.ts3.init(ctx);
+            ctx.logger.info('TS3 服务已启动');
+        } catch (error) {
+            ctx.logger.error('TS3 服务启动失败:', error);
+        }
+
+        ctx.logger.info('TeamSpeak3 Link 插件初始化完成');
     } catch (error) {
         ctx.logger.error('插件初始化失败:', error);
     }
@@ -96,9 +104,9 @@ export const plugin_onevent: PluginModule['plugin_onevent'] = async (ctx, event)
  */
 export const plugin_cleanup: PluginModule['plugin_cleanup'] = async (ctx) => {
     try {
-        // TODO: 在这里清理你的资源（定时器、WebSocket 连接等）
-        pluginState.cleanup();
-        ctx.logger.info('插件已卸载');
+        // 清理 TS3 连接和其他资源
+        await pluginState.cleanup();
+        ctx.logger.info('TeamSpeak3 Link 插件已卸载');
     } catch (e) {
         ctx.logger.warn('插件卸载时出错:', e);
     }
