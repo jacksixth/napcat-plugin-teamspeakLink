@@ -36,7 +36,7 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Get version
         id: version
@@ -57,7 +57,7 @@ jobs:
           npm version ${{ steps.version.outputs.clean_version }} --no-git-tag-version --allow-same-version
 
       - name: Install WebUI dependencies
-        run: cd src/webui && pnpm install
+        run: cd src/webui && pnpm install --no-frozen-lockfile
 
       - name: Build project
         run: pnpm run build
