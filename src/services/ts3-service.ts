@@ -65,7 +65,7 @@ export class TS3Service {
 
             this.ctx.logger.info(`正在连接 TS3 服务器: ${config.host}:${config.queryPort}`);
 
-            this.teamspeak = new TeamSpeak({
+            const teamspeak = new TeamSpeak({
                 host: config.host,
                 protocol: QueryProtocol[config.protocol],
                 queryport: config.queryPort,
@@ -76,10 +76,9 @@ export class TS3Service {
             });
 
             // 注册事件监听器
-            this.registerEventListeners();
+            this.registerEventListeners(teamspeak);
 
-            this.isConnected = true;
-            this.ctx.logger.info('TS3 连接已建立');
+            // 注意：不在这里设置 isConnected，等待 ready 事件
         } catch (error) {
             this.ctx.logger.error('TS3 连接失败:', error);
             this.handleReconnect();
@@ -89,47 +88,48 @@ export class TS3Service {
     /**
      * 注册事件监听器
      */
-    private registerEventListeners(): void {
-        if (!this.teamspeak || !this.ctx) return;
+    private registerEventListeners(teamspeak: any): void {
+        if (!teamspeak || !this.ctx) return;
 
         const notifyConfig = pluginState.config.ts3Notify;
 
         // 连接成功
-        this.teamspeak.on('ready', async () => {
+        teamspeak.on('ready', async () => {
             this.ctx!.logger.info('✓ TS3 连接成功');
+            this.teamspeak = teamspeak;
             this.isConnected = true;
             this.isReconnecting = false;
         });
 
         // 连接断开
-        this.teamspeak.on('close', (e: any) => {
+        teamspeak.on('close', (e: any) => {
             this.ctx!.logger.warn('⚠ TS3 连接断开', e);
             this.isConnected = false;
             this.handleReconnect();
         });
 
         // 连接错误
-        this.teamspeak.on('error', (err: Error) => {
+        teamspeak.on('error', (err: Error) => {
             this.ctx!.logger.error('✗ TS3 连接出错:', err);
             this.isConnected = false;
         });
 
         // 用户进入服务器
-        this.teamspeak.on('clientconnect', (e: any) => {
+        teamspeak.on('clientconnect', (e: any) => {
             if (!notifyConfig.disNotifyNameList.includes(e.client.nickname)) {
                 this.sendNotifyMessage(`${e.client.nickname} 进入 TS`);
             }
         });
 
         // 用户离开服务器
-        this.teamspeak.on('clientdisconnect', (e: any) => {
+        teamspeak.on('clientdisconnect', (e: any) => {
             if (e.client && !notifyConfig.disNotifyNameList.includes(e.client.nickname)) {
                 this.sendNotifyMessage(`${e.client.nickname} 离开 TS`);
             }
         });
 
         // 用户移动频道
-        this.teamspeak.on('clientmoved', (e: any) => {
+        teamspeak.on('clientmoved', (e: any) => {
             if (notifyConfig.enableChannelMoveNotify && e.client && e.channel) {
                 if (!notifyConfig.disNotifyNameList.includes(e.client.nickname)) {
                     this.sendNotifyMessage(`${e.client.nickname} 移动到频道: ${e.channel.name}`);
@@ -178,29 +178,12 @@ export class TS3Service {
         this.ctx.logger.info('尝试重新连接 TS3...');
 
         try {
-            // 如果配置为 -1，则无限重试；否则按配置次数重试
-            const maxAttempts = reconnectTimer === -1 ? Infinity : reconnectTimer;
-            let attempts = 0;
-
-            while (attempts < maxAttempts && !this.isConnected) {
-                attempts++;
-                this.ctx.logger.info(`重连尝试 ${attempts}${maxAttempts === Infinity ? '' : `/${maxAttempts}`}...`);
-
-                try {
-                    await this.teamspeak.reconnect(1, 1000);
-                    this.isConnected = true;
-                    this.ctx.logger.info('✓ TS3 重连成功');
-                } catch (e) {
-                    this.ctx.logger.error(`重连失败 (${attempts}):`, e);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-
-            if (!this.isConnected) {
-                this.ctx.logger.error('TS3 重连失败，已达到最大重试次数');
-            }
+            // reconnect 第一个参数是重试次数，第二个参数是每次重试间隔（毫秒）
+            await this.teamspeak.reconnect(reconnectTimer, 1000);
+            this.isConnected = true;
+            this.ctx.logger.info('✓ TS3 重连成功');
         } catch (error) {
-            this.ctx.logger.error('TS3 重连过程中出错:', error);
+            this.ctx.logger.error('TS3 重连失败:', error);
         } finally {
             this.isReconnecting = false;
         }
@@ -216,7 +199,7 @@ export class TS3Service {
 
         try {
             const config = pluginState.config.ts3;
-            const channels = await this.teamspeak.getChannelList({ withClients: true });
+            const channels = await this.teamspeak.channelList();
 
             const lines: string[] = [];
             lines.push(`====${config.serverName}====`);
@@ -231,9 +214,11 @@ export class TS3Service {
                     lines.push(`  ${channel.name}`);
 
                     for (const client of clients) {
-                        const idleTime = client.idleTime || 0;
-                        const minutes = Math.floor(idleTime / 60);
-                        const seconds = idleTime % 60;
+                        // lastconnected 是 Unix 时间戳（秒），计算已连接时长
+                        const now = Math.floor(Date.now() / 1000);
+                        const connectedSeconds = now - (client.lastconnected || now);
+                        const minutes = Math.floor(connectedSeconds / 60);
+                        const seconds = connectedSeconds % 60;
                         const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
                         lines.push(`- ${client.nickname} (${timeStr})`);
@@ -266,7 +251,7 @@ export class TS3Service {
 
         try {
             const config = pluginState.config.ts3;
-            const channels = await this.teamspeak.getChannelList({ withClients: true });
+            const channels = await this.teamspeak.channelList();
 
             const result: TS3ServerStatus = {
                 name: config.serverName,
@@ -280,13 +265,15 @@ export class TS3Service {
                     const users: TS3UserInfo[] = [];
 
                     for (const client of clients) {
-                        const idleTime = client.idleTime || 0;
-                        const minutes = Math.floor(idleTime / 60);
-                        const seconds = idleTime % 60;
+                        // lastconnected 是 Unix 时间戳（秒），计算已连接时长
+                        const now = Math.floor(Date.now() / 1000);
+                        const connectedSeconds = now - (client.lastconnected || now);
+                        const minutes = Math.floor(connectedSeconds / 60);
+                        const seconds = connectedSeconds % 60;
 
                         users.push({
                             nickName: client.nickname,
-                            lastconnected: new Date(client.connectedTime || Date.now()).toLocaleString('zh-CN'),
+                            lastconnected: new Date((client.lastconnected || 0) * 1000).toLocaleString('zh-CN'),
                             connectTime: `${minutes}:${seconds.toString().padStart(2, '0')}`,
                         });
                     }
