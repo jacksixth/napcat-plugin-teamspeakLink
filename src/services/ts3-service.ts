@@ -199,6 +199,7 @@ export class TS3Service {
 
         try {
             const config = pluginState.config.ts3;
+            const notifyConfig = pluginState.config.ts3Notify;
             const channels = await this.teamspeak.channelList();
 
             const lines: string[] = [];
@@ -210,19 +211,26 @@ export class TS3Service {
             for (const channel of channels) {
                 const clients = await channel.getClients();
                 if (clients.length > 0) {
-                    lines.push('======');
-                    lines.push(`  ${channel.name}`);
+                    // 过滤掉排除通知的昵称
+                    const filteredClients = clients.filter((client: any) => 
+                        !notifyConfig.disNotifyNameList.includes(client.nickname)
+                    );
+                    
+                    if (filteredClients.length > 0) {
+                        lines.push('======');
+                        lines.push(`  ${channel.name}`);
 
-                    for (const client of clients) {
-                        // lastconnected 是 Unix 时间戳（秒），计算已连接时长
-                        const now = Math.floor(Date.now() / 1000);
-                        const connectedSeconds = now - (client.lastconnected || now);
-                        const minutes = Math.floor(connectedSeconds / 60);
-                        const seconds = connectedSeconds % 60;
-                        const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        for (const client of filteredClients) {
+                            // lastconnected 是 Unix 时间戳（秒），计算已连接时长
+                            const now = Math.floor(Date.now() / 1000);
+                            const connectedSeconds = now - (client.lastconnected || now);
+                            const minutes = Math.floor(connectedSeconds / 60);
+                            const seconds = connectedSeconds % 60;
+                            const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-                        lines.push(`- ${client.nickname} (${timeStr})`);
-                        totalCount++;
+                            lines.push(`- ${client.nickname} (${timeStr})`);
+                            totalCount++;
+                        }
                     }
                 }
             }
@@ -251,6 +259,7 @@ export class TS3Service {
 
         try {
             const config = pluginState.config.ts3;
+            const notifyConfig = pluginState.config.ts3Notify;
             const channels = await this.teamspeak.channelList();
 
             const result: TS3ServerStatus = {
@@ -262,24 +271,31 @@ export class TS3Service {
             for (const channel of channels) {
                 const clients = await channel.getClients();
                 if (clients.length > 0) {
-                    const users: TS3UserInfo[] = [];
+                    // 过滤掉排除通知的昵称
+                    const filteredClients = clients.filter((client: any) => 
+                        !notifyConfig.disNotifyNameList.includes(client.nickname)
+                    );
+                    
+                    if (filteredClients.length > 0) {
+                        const users: TS3UserInfo[] = [];
 
-                    for (const client of clients) {
-                        // lastconnected 是 Unix 时间戳（秒），计算已连接时长
-                        const now = Math.floor(Date.now() / 1000);
-                        const connectedSeconds = now - (client.lastconnected || now);
-                        const minutes = Math.floor(connectedSeconds / 60);
-                        const seconds = connectedSeconds % 60;
+                        for (const client of filteredClients) {
+                            // lastconnected 是 Unix 时间戳（秒），计算已连接时长
+                            const now = Math.floor(Date.now() / 1000);
+                            const connectedSeconds = now - (client.lastconnected || now);
+                            const minutes = Math.floor(connectedSeconds / 60);
+                            const seconds = connectedSeconds % 60;
 
-                        users.push({
-                            nickName: client.nickname,
-                            lastconnected: new Date((client.lastconnected || 0) * 1000).toLocaleString('zh-CN'),
-                            connectTime: `${minutes}:${seconds.toString().padStart(2, '0')}`,
-                        });
+                            users.push({
+                                nickName: client.nickname,
+                                lastconnected: new Date((client.lastconnected || 0) * 1000).toLocaleString('zh-CN'),
+                                connectTime: `${minutes}:${seconds.toString().padStart(2, '0')}`,
+                            });
+                        }
+
+                        result.res[channel.name] = users;
+                        result.count += users.length;
                     }
-
-                    result.res[channel.name] = users;
-                    result.count += users.length;
                 }
             }
 
