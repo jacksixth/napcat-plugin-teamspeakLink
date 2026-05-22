@@ -17,8 +17,16 @@ async function loadTS3Library(): Promise<void> {
     if (!TeamSpeak) {
         try {
             const ts3Module = await import('ts3-nodejs-library');
-            TeamSpeak = ts3Module.default || ts3Module.TeamSpeak;
+            // ts3-nodejs-library 直接导出 TeamSpeak 类
+            TeamSpeak = ts3Module.TeamSpeak;
             QueryProtocol = ts3Module.QueryProtocol;
+            
+            if (!TeamSpeak) {
+                throw new Error('无法找到 TeamSpeak 构造函数');
+            }
+            if (!QueryProtocol) {
+                throw new Error('无法找到 QueryProtocol');
+            }
         } catch (error) {
             throw new Error(`无法加载 ts3-nodejs-library: ${error}`);
         }
