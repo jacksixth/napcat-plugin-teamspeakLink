@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.mjs",
   "description": "连接 QQ 机器人与 TeamSpeak3 语音服务器，支持在线人数查询和用户通知",
-  "author": "Your Name",
+  "author": "jacksixth",
   "license": "MIT",
   "keywords": [
     "napcat",
@@ -17,10 +17,11 @@
   ],
   "napcat": {
     "tags": [
-      "工具"
+      "工具",
+      "语音"
     ],
     "minVersion": "4.14.0",
-    "homepage": ""
+    "homepage": "https://github.com/jacksixth/napcat-plugin-teamspeakLink"
   },
   "dependencies": {
     "napcat-types": "0.0.16",
